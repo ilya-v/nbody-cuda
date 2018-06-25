@@ -1,0 +1,12 @@
+#!/bin/bash
+SRC=nbody.cu
+EXE=nbody
+
+nvcc -arch=sm_61  -o $EXE $SRC
+
+echo $EXE
+date
+./$EXE
+date
+
+
