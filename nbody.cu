@@ -1,7 +1,21 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "timer.h"
+#include <time.h>
+
+static clock_t t0;
+
+void StartTimer()
+{
+    t0 = clock();
+}
+
+
+double GetTimer()
+{
+    clock_t t = clock();
+    return (t - t0) * 1000.0 / CLOCKS_PER_SEC;
+}
 
 #define BLOCK_SIZE 256
 #define SOFTENING 1e-3f
