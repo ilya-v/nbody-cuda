@@ -70,9 +70,14 @@ int main(const int argc, const char** argv) {
         nStepsForOutput = nSteps/10;
 
     const double
-        dt = 0.0001f;
+        dt_max = 0.01,
+        dv_max = 0.01;
+    double
+        dt = dt_max/10;
 
-    Particle *particles = NULL;
+    Particle
+        *particles = NULL,
+        *old_particles = NULL;
     double *u = NULL;
     unsigned N = 0;
 
@@ -91,7 +96,8 @@ int main(const int argc, const char** argv) {
         }
 
         rewind(fin);
-        particles = (Particle *) malloc(N * sizeof(Particle));
+        particles = (Particle *) malloc(N*sizeof(Particle));
+        old_particles = (Particle *) malloc(N*sizeof(Particle));
         unsigned i = 0;
         for (; i < N; i++)
             if (6 != fscanf(fin, "%lf  %lf  %lf  %lf  %lf  %lf\n",
@@ -125,13 +131,31 @@ int main(const int argc, const char** argv) {
 
         cudaMemcpy(d_p, particles, N*sizeof(Particle), cudaMemcpyHostToDevice);
         calcForces<<<nBlocks, BLOCK_SIZE>>>(d_p, dt, N);
+        Particle *tmp_particles = old_particles;
+        old_particles = particles;
+        particles = tmp_particles;
         cudaMemcpy(particles, d_p, N*sizeof(Particle), cudaMemcpyDeviceToHost);
 
+        double dv = 0;
         for (int i = 0 ; i < N; i++) {
-            particles[i].x += particles[i].vx*dt;
-            particles[i].y += particles[i].vy*dt;
-            particles[i].z += particles[i].vz*dt;
+            Particle *p = particles + i;
+            p->x += p->vx*dt;
+            p->y += p->vy*dt;
+            p->z += p->vz*dt;
+
+            Particle *op = old_particles + i;
+            const double
+                dv_ix = p->vx - op->vx,
+                dv_iy = p->vy - op->vy,
+                dv_iz = p->vz - op->vz,
+                dv_i = sqrt(dv_ix * dv_ix + dv_iy*dv_iy + dv_iz*dv_iz);
+            if (dv_i > dv)
+                dv = dv_i;
         }
+
+        dt = dv_max/dv * dt;
+        if (dt > dt_max)
+            dt = dt_max;
 
         if (step % nStepsForReport == 0) {
             double px = 0, py = 0, pz = 0;
@@ -154,8 +178,8 @@ int main(const int argc, const char** argv) {
             for (unsigned i = 0; i < N; i++)
                 ep += u[i];
 
-            printf("i %u t %lf p %lf %lf %lf Ep %lf Ek %lf E %lf\n",
-                step, getTimer(), px, py, pz, ep, ek, ek + ep);
+            printf("i %u t %lf dt %lf p %lf %lf %lf Ep %lf Ek %lf E %lf\n",
+                step, getTimer(), dt, px, py, pz, ep, ek, ek + ep);
         }
 
         if (step % nStepsForOutput == 0) {
