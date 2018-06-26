@@ -118,6 +118,26 @@ int main(const int argc, const char** argv) {
         u = (double *) malloc(N * sizeof(double));
     }
 
+    {
+        double px = 0, py = 0, pz = 0;
+        for (unsigned i = 0; i < N; i++) {
+            Particle *p = particles + i;
+            px += p->vx;
+            py += p->vy;
+            pz += p->vz;
+        }
+        px/=N;
+        py/=N;
+        pz/=N;
+        for (unsigned i = 0; i < N; i++) {
+            Particle *p = particles + i;
+            p->vx -= px;
+            p->vy -= py;
+            p->vz -= pz;
+        }
+
+    }
+
     const int nBlocks = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
     Particle *d_p;
