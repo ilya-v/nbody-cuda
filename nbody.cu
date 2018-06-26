@@ -82,6 +82,12 @@ int main(const int argc, const char** argv) {
                 &nSteps, &nStepsForReport, &nStepsForOutput, &dt_max, &dv_max);
             fclose(fparam);
         }
+        fprintf(stderr,
+            "nSteps=%u\n"
+            "nStepsForReport=%u\n"
+            "nStepsForOutput=%u"
+            "dt_max=%lf dv_max=%lf\n",
+            nSteps, nStepsForReport, nStepsForOutput, dt_max, dv_max);
     }
 
     Particle
@@ -215,7 +221,7 @@ int main(const int argc, const char** argv) {
 
         if (step % nStepsForOutput == 0) {
             char fname[256];
-            sprintf(fname, "out-%05u.txt", step);
+            sprintf(fname, "out-%06u.txt", step);
             FILE *fout = fopen(fname, "w");
             for (unsigned i = 0; i < N; i++) {
                 Particle *p = particles + i;
