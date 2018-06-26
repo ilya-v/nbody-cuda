@@ -90,15 +90,17 @@ int main(const int argc, const char** argv) {
 
         rewind(fin);
         particles = (Particle *) malloc(N * sizeof(Particle));
-        unsigned i = 0
-        for (; i < N && 6 == fscanf(fin, "%lf  %lf  %lf  %lf  %lf  %lf\n",
+        unsigned i = 0;
+        for (; i < N; i++)
+            if (6 != fscanf(fin, "%lf  %lf  %lf  %lf  %lf  %lf\n",
                                     &particles[i].x,
                                     &particles[i].y,
                                     &particles[i].z,
                                     &particles[i].vx,
                                     &particles[i].vy,
-                                    &particles[i].vz);
-               i++);
+                                    &particles[i].vz))
+                break;
+
         fclose(fin);
 
         if (i < N) {
