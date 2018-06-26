@@ -45,19 +45,19 @@ __global__ void calcForces(Particle *p, double dt, unsigned N) {
 
 __device__ double d_potential = 0;
 
-__global__ void calcPotential(Particle *p, unsigned N) {
+__global__ void calcPotential(Particle *p, double *u, unsigned N) {
     unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
     if (i < N) {
-        double u = 0;
+        double ui = 0;
         for (unsigned j = i + 1; j < N; j++) {
             const double
                 dx = p[j].x - p[i].x,
                 dy = p[j].y - p[i].y,
                 dz = p[j].z - p[i].z,
                 distSqr = dx*dx + dy*dy + dz*dz + SOFTENING;
-            u += rsqrt(distSqr);
+            ui += rsqrt(distSqr);
         }
-        atomicAdd(&d_potential, u);
+        u[i] = ui;
     }
 }
 
@@ -72,6 +72,7 @@ int main(const int argc, const char** argv) {
         dt = 0.001f;
 
     Particle *particles = NULL;
+    double *u = NULL;
     unsigned N = 0;
 
     {
@@ -107,12 +108,16 @@ int main(const int argc, const char** argv) {
             printf("Cannot read input.txt: %u lines from %u\n", i, N);
             return -1;
         }
+        u = (double *) malloc(N * sizeof(double));
     }
 
     const int nBlocks = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
     Particle *d_p;
     cudaMalloc(&d_p, N*sizeof(Particle));
+
+    double *d_u;
+    cudaMalloc(&d_u, N*sizeof(double));
 
     startTimer();
     for (unsigned step = 0; step < nSteps; step++) {
@@ -138,17 +143,23 @@ int main(const int argc, const char** argv) {
                 ek += (p->vx*p->vx + p->vy*p->vy + p->vz*p->vz)/2;
             }
 
+
+            for (unsigned i = 0; i < N; i++)
+                u[i] = 0;
+            cudaMemcpy(d_u, u, N*sizeof(double), cudaMemcpyHostToDevice);
+            calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, d_u, N);
+            cudaMemcpy(u, d_u, N*sizeof(double), cudaMemcpyDeviceToHost);
             double ep = 0;
-            cudaMemcpyToSymbol("d_potential", &ep, sizeof(ep), 0, cudaMemcpyHostToDevice);
-            calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, N);
-            cudaMemcpyFromSymbol(&ep, "d_potential", sizeof(ep), 0, cudaMemcpyDeviceToHost);
+            for (unsigned i = 0; i < N; i++)
+                ep += u[i];
 
             printf("i %u t %lf p %lf %lf %lf Ep %lf Ek %lf E %lf\n",
                 step, getTimer(), px, py, pz, ep, ek, ek + ep);
         }
     }
 
-    printf("N=%d, Titer=%0.3lf s\n", N, getTimer() / nSteps);
+    printf("N=%d, Steps=%u Titer=%0.3lf s\n", N, nSteps, getTimer() / nSteps);
     free(particles);
     cudaFree(d_p);
+    cudaFree(d_u);
 }
