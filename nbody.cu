@@ -66,7 +66,8 @@ int main(const int argc, const char** argv) {
 
     const int
         nSteps = 10000,
-        nStepsForReport = 10;
+        nStepsForReport = 10,
+        nStepsForOutput = nSteps/10;
 
     const double
         dt = 0.0001f;
@@ -155,6 +156,19 @@ int main(const int argc, const char** argv) {
 
             printf("i %u t %lf p %lf %lf %lf Ep %lf Ek %lf E %lf\n",
                 step, getTimer(), px, py, pz, ep, ek, ek + ep);
+        }
+
+        if (step % nStepsForOutput == 0) {
+            char fname[256];
+            sprintf(fname, "out-%05u.txt", step);
+            FILE *fout = fopen(fname, "w");
+            for (unsigned i = 0; i < N; i++) {
+                Particle *p = particles + i;
+                fprintf(fout, "%lf %lf %lf %lf %lf %lf\n",
+                        p->x, p->y, p->z, p->vx, p->vy, p->vz);
+            }
+
+            fclose(fout);
         }
     }
 
