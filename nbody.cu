@@ -65,11 +65,11 @@ __global__ void calcPotential(Particle *p, double *u, unsigned N) {
 int main(const int argc, const char** argv) {
 
     const int
-        nSteps = 1000,
+        nSteps = 10000,
         nStepsForReport = 10;
 
     const double
-        dt = 0.001f;
+        dt = 0.0001f;
 
     Particle *particles = NULL;
     double *u = NULL;
