@@ -15,7 +15,7 @@ double getTimer() {
 }
 
 #define BLOCK_SIZE 256
-#define SOFTENING 1e-3f
+#define SOFTENING (0.01)
 
 typedef struct { double x, y, z, vx, vy, vz; } Particle;
 
@@ -126,6 +126,7 @@ int main(const int argc, const char** argv) {
     double *d_u;
     cudaMalloc(&d_u, N*sizeof(double));
 
+    double t = 0;
     startTimer();
     for (unsigned step = 0; step < nSteps; step++) {
 
@@ -152,6 +153,7 @@ int main(const int argc, const char** argv) {
             if (dv_i > dv)
                 dv = dv_i;
         }
+        t += dt;
 
         dt = dv_max/dv * dt;
         if (dt > dt_max)
@@ -178,8 +180,8 @@ int main(const int argc, const char** argv) {
             for (unsigned i = 0; i < N; i++)
                 ep += u[i];
 
-            printf("i %u t %lf dt %lf p %lf %lf %lf Ep %lf Ek %lf E %lf\n",
-                step, getTimer(), dt, px, py, pz, ep, ek, ek + ep);
+            printf("i %u t %lf tsec %lf dt %lf p %lf %lf %lf Ep %lf Ek %lf E %lf\n",
+                step, t, getTimer(), dt, px, py, pz, ep, ek, ek + ep);
         }
 
         if (step % nStepsForOutput == 0) {
