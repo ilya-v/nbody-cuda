@@ -5,16 +5,13 @@
 
 static clock_t t0;
 
-void StartTimer()
-{
+void startTimer() {
     t0 = clock();
 }
 
-
-double GetTimer()
-{
+double getTimer() {
     clock_t t = clock();
-    return (t - t0) * 1000.0 / CLOCKS_PER_SEC;
+    return (t - t0) / (double)CLOCKS_PER_SEC;
 }
 
 #define BLOCK_SIZE 256
@@ -106,10 +103,7 @@ int main(const int argc, const char** argv) {
         }
     }
 
-    printf("N=%d, Titer=%0.3lf s\n",
-        N,
-        GetTimer() / nSteps / 1000.0);
-
+    printf("N=%d, Titer=%0.3lf s\n", N, getTimer() / nSteps);
     free(particles);
     cudaFree(d_p);
 }
