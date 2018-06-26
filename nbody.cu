@@ -19,71 +19,105 @@ double getTimer() {
 
 typedef struct { double x, y, z, vx, vy, vz; } Particle;
 
-__global__
-void calcForces(Particle *p, double dt, int N) {
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
+__global__ void calcForces(Particle *p, double dt, unsigned N) {
+    unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
     if (i < N) {
-        double Fx = 0.0f, Fy = 0.0f, Fz = 0.0f;
-
-        for (int j = 0; j < N; j++) {
+        double fx = 0, fy = 0, fz = 0;
+        for (unsigned j = 0; j < N; j++) {
             const double
                 dx = p[j].x - p[i].x,
                 dy = p[j].y - p[i].y,
                 dz = p[j].z - p[i].z,
                 distSqr = dx*dx + dy*dy + dz*dz + SOFTENING,
-                invDist = rsqrtf(distSqr),
+                invDist = rsqrt(distSqr),
                 invDist3 = invDist * invDist * invDist;
 
-            Fx += dx * invDist3;
-            Fy += dy * invDist3;
-            Fz += dz * invDist3;
+            fx += dx * invDist3;
+            fy += dy * invDist3;
+            fz += dz * invDist3;
         }
 
-        p[i].vx += dt*Fx;
-        p[i].vy += dt*Fy;
-        p[i].vz += dt*Fz;
+        p[i].vx += dt*fx;
+        p[i].vy += dt*fy;
+        p[i].vz += dt*fz;
     }
-    __syncthreads();
 }
+
+__device__ double d_potential = 0;
+
+__global__ void calcPotential(Particle *p, unsigned N) {
+    unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < N) {
+        double u = 0;
+        for (unsigned j = i + 1; j < N; j++) {
+            const double
+                dx = p[j].x - p[i].x,
+                dy = p[j].y - p[i].y,
+                dz = p[j].z - p[i].z,
+                distSqr = dx*dx + dy*dy + dz*dz + SOFTENING;
+            u += rsqrt(distSqr);
+        }
+        atomicAdd(&d_potential, u);
+    }
+}
+
 
 int main(const int argc, const char** argv) {
 
     const int
-        Ns =  50,
-        N  = Ns * Ns * Ns,
         nSteps = 1000,
-        nStepsForReport = 10,
-        nBlocks = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        nStepsForReport = 10;
 
     const double
-        dt = 0.001f,
-        init_dist = 1.0;
+        dt = 0.001f;
 
-    size_t n_bytes = N*sizeof(Particle);
-    Particle *particles = (Particle*)malloc(n_bytes);
+    Particle *particles = NULL;
+    unsigned N = 0;
 
-    for (int i = 0; i < Ns; i++)
-    for (int j = 0; j < Ns; j++)
-    for (int k = 0; k < Ns; k++)  {
-        const double init_shift = init_dist * (Ns - 1) / 2;
-        Particle *p = particles + i;
-        p->x = i * init_dist - init_shift;
-        p->y = j * init_dist - init_shift;
-        p->z = k * init_dist - init_shift;
-        p->vx = 0;
-        p->vy = 0;
-        p->vz = 0;
+    {
+        FILE *fin = fopen("input.txt", "rb");
+        if (!fin) {
+            printf("Cannot open input.txt\n");
+            return -1;
+        }
+
+        {
+            double t1, t2, t3, t4, t5, t6;
+            for (; 6 == fscanf(fin, "%lf  %lf  %lf  %lf  %lf  %lf\n",
+                               &t1, &t2, &t3, &t4, &t5, &t6);
+                   N++);
+        }
+
+        frewind(fin);
+        particles = (Particle *) malloc(N * sizeof(Particle));
+        unsigned i = 0
+        for (; i < N && 6 == fscanf(fin, "%lf  %lf  %lf  %lf  %lf  %lf\n",
+                                    &particles[i].x,
+                                    &particles[i].y,
+                                    &particles[i].z,
+                                    &particles[i].vx,
+                                    &particles[i].vy,
+                                    &particles[i].vz);
+               i++);
+        fclose(fin);
+
+        if (i < N) {
+            printf("Cannot read input.txt: %u lines from %u\n", i, N);
+            return -1;
+        }
     }
 
+    const int nBlocks = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
+
     Particle *d_p;
-    cudaMalloc(&d_p, n_bytes);
+    cudaMalloc(&d_p, N*sizeof(Particle));
 
-    StartTimer();
-    for (int iter = 0; iter < nSteps; iter++) {
+    startTimer();
+    for (unsigned step = 0; step < nSteps; step++) {
 
-        cudaMemcpy(d_p, particles, n_bytes, cudaMemcpyHostToDevice);
-        calcForces <<<nBlocks, BLOCK_SIZE>>>(d_p, dt, N);
-        cudaMemcpy(particles, d_p, n_bytes, cudaMemcpyDeviceToHost);
+        cudaMemcpy(d_p, particles, N*sizeof(Particle), cudaMemcpyHostToDevice);
+        calcForces<<<nBlocks, BLOCK_SIZE>>>(d_p, dt, N);
+        cudaMemcpy(particles, d_p, N*sizeof(Particle), cudaMemcpyDeviceToHost);
 
         for (int i = 0 ; i < N; i++) {
             particles[i].x += particles[i].vx*dt;
@@ -91,15 +125,24 @@ int main(const int argc, const char** argv) {
             particles[i].z += particles[i].vz*dt;
         }
 
-        if (iter % nStepsForReport == 0) {
+        if (step % nStepsForReport == 0) {
             double px = 0, py = 0, pz = 0;
+            double ek = 0;
             for (int i = 0 ; i < N; i++) {
                 Particle *p = particles + i;
                 px += p->vx;
                 py += p->vy;
                 pz += p->vz;
+                ek += (p->vx*p->vx + p->vy*p->vy + p->vz*p->vz)/2;
             }
-            printf("p %lf %lf %lf\n", px, py, pz);
+
+            double ep = 0;
+            cudaMemcpyToSymbol("d_potential", &ep, sizeof(ep), 0, cudaMemcpyHostToDevice);
+            calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, N);
+            cudaMemcpyFromSymbol(&ep, "d_potential", sizeof(ep), 0, cudaMemcpyDeviceToHost);
+
+            printf("i %u t %lf p %lf %lf %lf Ep %lf Ek %lf E %lf\n",
+                step, getTimer(), px, py, pz, ep, ek, ek + ep);
         }
     }
 
