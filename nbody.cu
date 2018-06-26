@@ -200,8 +200,8 @@ int main(const int argc, const char** argv) {
             for (unsigned i = 0; i < N; i++)
                 ep += u[i];
 
-            printf("i %u t %lf tsec %lf dt %lf p %lf %lf %lf Ep %lf Ek %lf E %lf\n",
-                step, t, getTimer(), dt, px, py, pz, ep, ek, ek + ep);
+            printf("%u %lf %lf %lf %lf %lf\n",
+                step, t, dt, ep, ek, ek + ep);
         }
 
         if (step % nStepsForOutput == 0) {
