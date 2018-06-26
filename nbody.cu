@@ -85,7 +85,7 @@ int main(const int argc, const char** argv) {
         fprintf(stderr,
             "nSteps=%u\n"
             "nStepsForReport=%u\n"
-            "nStepsForOutput=%u"
+            "nStepsForOutput=%u\n"
             "dt_max=%lf dv_max=%lf\n",
             nSteps, nStepsForReport, nStepsForOutput, dt_max, dv_max);
     }
