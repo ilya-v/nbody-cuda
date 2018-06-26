@@ -64,16 +64,25 @@ __global__ void calcPotential(Particle *p, double *u, unsigned N) {
 
 int main(const int argc, const char** argv) {
 
-    const int
-        nSteps = 10000,
-        nStepsForReport = 10,
-        nStepsForOutput = nSteps/10;
+    unsigned
+        nSteps = 1000*1000,
+        nStepsForReport = 100,
+        nStepsForOutput = nSteps/100;
 
-    const double
+    double
         dt_max = 0.01,
         dv_max = 0.01;
     double
         dt = dt_max/10;
+
+    {
+        FILE *fparam = fopen("params.txt", "r");
+        if (fparam) {
+            fscanf(fparam, "%u %u %u %lf %lf",
+                &nSteps, &nStepsForReport, &nStepsForOutput, &dt_max, &dv_max);
+            fclose(fparam);
+        }
+    }
 
     Particle
         *particles = NULL,
@@ -82,7 +91,7 @@ int main(const int argc, const char** argv) {
     unsigned N = 0;
 
     {
-        FILE *fin = fopen("input.txt", "rb");
+        FILE *fin = fopen("input.txt", "r");
         if (!fin) {
             printf("Cannot open input.txt\n");
             return -1;
