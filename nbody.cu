@@ -88,7 +88,7 @@ int main(const int argc, const char** argv) {
                    N++);
         }
 
-        frewind(fin);
+        rewind(fin);
         particles = (Particle *) malloc(N * sizeof(Particle));
         unsigned i = 0
         for (; i < N && 6 == fscanf(fin, "%lf  %lf  %lf  %lf  %lf  %lf\n",
