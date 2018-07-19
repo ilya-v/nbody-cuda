@@ -85,8 +85,9 @@ void read_params() {
 
 void show_params(const bool to_stdout) {
     for (const param_rec_t *rec = param_recs; rec->name; rec++) {
-        fprintf(to_stdout? stdout : stderr, "%s = ", rec->name);
-        fprintf(to_stdout? stdout : stderr, rec->type, rec->ptr);
+        char format[256];
+        sprintf(format, "%%s = %s\n", rec->type);
+        fprintf(to_stdout? stdout : stderr, format, rec->name, rec->ptr);
     }
 }
 
