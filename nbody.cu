@@ -267,7 +267,7 @@ int main(const int argc, const char** argv) {
             for (unsigned i = 0; i < N; i++)
                 u[i] = 0;
             cudaMemcpy(d_u, u, N*sizeof(double), cudaMemcpyHostToDevice);
-            calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, d_u, N);
+            calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, d_u, N, params.r2_eps);
             cudaMemcpy(u, d_u, N*sizeof(double), cudaMemcpyDeviceToHost);
             double ep = 0;
             for (unsigned i = 0; i < N; i++)
