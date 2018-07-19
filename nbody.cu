@@ -83,10 +83,6 @@ void read_params() {
     fclose(fparam);
 }
 
-const char * deref_param(const char *type, const void *ptr) {
-
-}
-
 void show_params(const bool to_stdout) {
     FILE *fo = to_stdout? stdout : stderr;
     for (const param_rec_t *rec = param_recs; rec->name; rec++) {
