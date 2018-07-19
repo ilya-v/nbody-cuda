@@ -1,1 +1,5 @@
+set view equal xyz
 splot 'XYZ.txt' using 1:2:3 with points palette  pointsize 0.3 pointtype 7
+
+set size ratio -1
+plot "XYZ.txt" using 2:3:5:6 with vectors head filled lt 2
