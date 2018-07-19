@@ -87,7 +87,7 @@ void show_params(const bool to_stdout) {
     FILE *fo = to_stdout? stdout : stderr;
     for (const param_rec_t *rec = param_recs; rec->name; rec++) {
         (0 == strcmp("%lf", rec->type))?
-            fprintf(fo, "%s = %lf\n", rec->name, *(double*)rec->ptr) :
+            fprintf(fo, "%s = %lg\n", rec->name, *(double*)rec->ptr) :
         (0 == strcmp("%u", rec->type))?
             fprintf(fo, "%s = %u\n", rec->name, *(unsigned*)rec->ptr) :
             fprintf(fo, "%s = unknown\n", rec->name);
