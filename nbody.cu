@@ -83,11 +83,18 @@ void read_params() {
     fclose(fparam);
 }
 
+const char * deref_param(const char *type, const void *ptr) {
+
+}
+
 void show_params(const bool to_stdout) {
+    FILE *fo = to_stdout? stdout : stderr;
     for (const param_rec_t *rec = param_recs; rec->name; rec++) {
-        char format[256];
-        sprintf(format, "%%s = %s\n", rec->type);
-        fprintf(to_stdout? stdout : stderr, format, rec->name, rec->ptr);
+        (0 == strcmp("%lf", rec->type))?
+            fprintf(fo, "%s = %lf", rec->name, *(double*)rec->ptr) :
+        (0 == strcmp("%u", rec->type))?
+            fprintf(fo, "%s = %u", rec->name, *(unsigned*)rec->ptr) :
+            fprintf(fo, "%s = unknown", rec->name);
     }
 }
 
