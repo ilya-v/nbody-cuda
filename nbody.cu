@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 static clock_t t0;
 
@@ -62,9 +63,12 @@ static const param_rec_t param_recs[] = {
 };
 
 bool try_read_param(const char *line, const param_rec_t *rec) {
-    const char
-        *key = strstr(line, rec->name),
-        *value = (key? strchr(key, '=') : NULL);
+    const char *key = strstr(line, rec->name);
+    const char *key_end = key? (key + strlen(rec->name)) : NULL;
+    const bool key_found = key_end &&
+        (*key_end == '=' || isspace(*key_end));
+
+    const char *value = key_found? strchr(key, '=') : NULL;
     return  value?  (sscanf(value + 1, rec->type, rec->ptr) == 1) : false;
 }
 
