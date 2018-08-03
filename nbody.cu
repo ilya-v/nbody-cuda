@@ -98,6 +98,66 @@ void show_params(const bool to_stdout) {
     }
 }
 
+typedef struct  {
+    unsigned step;
+    double t, dt, ep, ek, etot;
+} status_t;
+status_t status = { 0, };
+
+typedef struct {
+    const char *fmt;
+    void *ptr;
+} status_rec_t;
+
+static const status_rec_t status_recs[] = {
+    { "step %8u",        &status.step    },
+    { "time %14.8lf",    &status.t       },
+    { "dt   %14.8le",    &status.dt      },
+    { "ep   %14.8le",    &status.ep      },
+    { "ek   %14.8le",    &status.ek      },
+    { "etot %14.8le",    &status.etot    },
+    { NULL  }
+};
+
+void print_double(const char *fmt, void *p) { printf(fmt, *(double*)p); }
+void print_int   (const char *fmt, void *p) { printf(fmt, *(int*)p);    }
+typedef struct {
+    const char *type;
+    void (*print_f)(const char *fmt, void *p);
+} print_rec_t;
+static const print_rec_t print_recs[] = {
+    { "lf", print_double    },
+    { "lg", print_double    },
+    { "le", print_double    },
+    { "u",  print_int       },
+    { "d",  print_int       },
+    { NULL  }
+};
+
+void status_print_header() {
+    for (const status_rec_t *rec = status_recs; rec->fmt; rec++) {
+        const int
+            width = atoi(strchr(rec->fmt, '%') + 1),
+            n = (int)(strchr(rec->fmt, ' ') - rec->fmt);
+        printf("%*s#%*.*s", width - n, " ", n, n, rec->fmt );
+    }
+    printf("\n");
+}
+
+void status_print() {
+    for (const status_rec_t *rec = status_recs; rec->fmt; rec++) {
+        char *type = NULL;
+        strtod(strchr(rec->fmt, '%') + 1, &type);
+        for (const print_rec_t * prec = print_recs; prec->type; prec++) {
+            if(strncmp(type, prec->type, strlen(prec->type)) == 0) {
+                prec->print_f(strchr(rec->fmt, '%') - 1, rec->ptr);
+                break;
+            }
+        }
+    }
+}
+
+
 typedef struct { double x, y, z, vx, vy, vz; } Particle;
 
 __global__ void calcForces(Particle *p, double dt, unsigned N, double r2_eps) {
@@ -227,12 +287,15 @@ int main(const int argc, const char** argv) {
     double *d_u;
     cudaMalloc(&d_u, N*sizeof(double));
 
-    double t = params.t_start, dt = params.dt_start;
+    status_print_header();
+
+    status.t = params.t_start;
+    status.dt = params.dt_start;
     startTimer();
-    for (unsigned step = 0; step < params.n_steps; step++) {
+    for (status.step = 0; status.step < params.n_steps; status.step++) {
 
         cudaMemcpy(d_p, particles, N*sizeof(Particle), cudaMemcpyHostToDevice);
-        calcForces<<<nBlocks, BLOCK_SIZE>>>(d_p, dt, N, params.r2_eps);
+        calcForces<<<nBlocks, BLOCK_SIZE>>>(d_p, status.dt, N, params.r2_eps);
         Particle *tmp_particles = old_particles;
         old_particles = particles;
         particles = tmp_particles;
@@ -241,9 +304,9 @@ int main(const int argc, const char** argv) {
         double dv = 0;
         for (int i = 0 ; i < N; i++) {
             Particle *p = particles + i;
-            p->x += p->vx*dt;
-            p->y += p->vy*dt;
-            p->z += p->vz*dt;
+            p->x += p->vx*status.dt;
+            p->y += p->vy*status.dt;
+            p->z += p->vz*status.dt;
 
             Particle *op = old_particles + i;
             const double
@@ -254,40 +317,41 @@ int main(const int argc, const char** argv) {
             if (dv_i > dv)
                 dv = dv_i;
         }
-        t += dt;
+        status.t += status.dt;
 
-        dt = params.dv_max/dv * dt;
-        if (dt > params.dt_max)
-            dt = params.dt_max;
+        status.dt = params.dv_max/dv * status.dt;
+        if (status.dt > params.dt_max)
+            status.dt = params.dt_max;
 
-        if (step % params.n_steps_for_report == 0) {
+        if (status.step % params.n_steps_for_report == 0) {
             double px = 0, py = 0, pz = 0;
-            double ek = 0;
+            status.ek = 0;
             for (int i = 0 ; i < N; i++) {
                 Particle *p = particles + i;
                 px += p->vx;
                 py += p->vy;
                 pz += p->vz;
-                ek += (p->vx*p->vx + p->vy*p->vy + p->vz*p->vz)/2;
+                status.ek += (p->vx*p->vx + p->vy*p->vy + p->vz*p->vz)/2;
             }
 
 
             for (unsigned i = 0; i < N; i++)
                 u[i] = 0;
+
             cudaMemcpy(d_u, u, N*sizeof(double), cudaMemcpyHostToDevice);
             calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, d_u, N, params.r2_eps);
             cudaMemcpy(u, d_u, N*sizeof(double), cudaMemcpyDeviceToHost);
-            double ep = 0;
+            status.ep = 0;
             for (unsigned i = 0; i < N; i++)
-                ep += u[i];
+                status.ep += u[i];
 
-            printf("%u %lf %lf %lf %lf %lf\n",
-                step, t, dt, ep, ek, ek - ep);
+            status.etot = status.ek - status.ep;
+            status_print();
         }
 
-        if (step % params.n_steps_for_output == 0) {
+        if (status.step % params.n_steps_for_output == 0) {
             char fname[256];
-            sprintf(fname, "out-%06u.txt", step);
+            sprintf(fname, "out-%06u.txt", status.step);
             FILE *fout = fopen(fname, "w");
             for (unsigned i = 0; i < N; i++) {
                 Particle *p = particles + i;
