@@ -111,11 +111,11 @@ typedef struct {
 
 static const status_rec_t status_recs[] = {
     { "step %8u",        &status.step    },
-    { "time %14.8lf",    &status.t       },
-    { "dt   %14.8le",    &status.dt      },
-    { "ep   %14.8le",    &status.ep      },
-    { "ek   %14.8le",    &status.ek      },
-    { "etot %14.8le",    &status.etot    },
+    { "time %16.8lf",    &status.t       },
+    { "dt   %16.8le",    &status.dt      },
+    { "ep   %16.8le",    &status.ep      },
+    { "ek   %16.8le",    &status.ek      },
+    { "etot %16.8le",    &status.etot    },
     { NULL  }
 };
 
