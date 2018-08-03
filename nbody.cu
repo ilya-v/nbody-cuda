@@ -155,6 +155,7 @@ void status_print() {
             }
         }
     }
+    printf("\n");
 }
 
 
