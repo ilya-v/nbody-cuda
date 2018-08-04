@@ -1,3 +1,5 @@
+set term png
+set output "_ep+ek.png"
 set datafile commentschars "#"
 set xlabel "Time"
 set ylabel "Energy"
@@ -6,8 +8,4 @@ set format y "%g"
 plot \
     'output.txt' using 2:5 with points pointtype 7 pointsize 0.2 title 'Ek',\
     'output.txt' using 2:4 with points pointtype 7 pointsize 0.2 title 'Ep'
-
-
-pause -1
-
 
