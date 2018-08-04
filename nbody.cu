@@ -91,10 +91,10 @@ void show_params(const bool to_stdout) {
     FILE *fo = to_stdout? stdout : stderr;
     for (const param_rec_t *rec = param_recs; rec->name; rec++) {
         (0 == strcmp("%lf", rec->type))?
-            fprintf(fo, "%s = %lg\n", rec->name, *(double*)rec->ptr) :
+            fprintf(fo, "#%s = %lg\n", rec->name, *(double*)rec->ptr) :
         (0 == strcmp("%u", rec->type))?
-            fprintf(fo, "%s = %u\n", rec->name, *(unsigned*)rec->ptr) :
-            fprintf(fo, "%s = unknown\n", rec->name);
+            fprintf(fo, "#%s = %u\n", rec->name, *(unsigned*)rec->ptr) :
+            fprintf(fo, "#%s = unknown\n", rec->name);
     }
 }
 
@@ -364,7 +364,7 @@ int main(const int argc, const char** argv) {
         }
     }
 
-    printf("N=%d, Steps=%u Titer=%0.3lf s\n",
+    printf("#N=%d, Steps=%u Titer=%0.3lf s\n",
         N, params.n_steps, getTimer() / params.n_steps);
     free(particles);
     cudaFree(d_p);
