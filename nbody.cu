@@ -185,6 +185,22 @@ void status_update( const unsigned N,
     status.etot = status.ek - status.ep;
 }
 
+void particles_center(const unsigned N, Particle particles[]) {
+
+    double  x= 0,   y = 0,  z = 0;
+    double  px = 0, py = 0, pz = 0;
+    for (Particle *p = particles; p < particles + N; p++) {
+        px += p->vx;    py += p->vy;    pz += p->vz;
+        x += p->x;      y += p->y;      z += p->z;
+    }
+    px/=N;  py/=N;  pz/=N;
+    x/=N;   y/=N;   z/=N;
+    for (Particle *p = particles; p < particles + N; p++) {
+        p->vx -= px;    p->vy -= py;    p->vz -= pz;
+        p->x -= x;      p->y -= y;      p->z -= z;
+    }
+}
+
 __global__ void calcForces(Particle *p, double dt, unsigned N, double r2_eps) {
     unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
     if (i < N) {
@@ -282,25 +298,7 @@ int main(const int argc, const char** argv) {
         }
     }
 
-    {
-        double px = 0, py = 0, pz = 0;
-        for (unsigned i = 0; i < N; i++) {
-            Particle *p = particles + i;
-            px += p->vx;
-            py += p->vy;
-            pz += p->vz;
-        }
-        px/=N;
-        py/=N;
-        pz/=N;
-        for (unsigned i = 0; i < N; i++) {
-            Particle *p = particles + i;
-            p->vx -= px;
-            p->vy -= py;
-            p->vz -= pz;
-        }
-
-    }
+    particles_center(N, particles);
 
     const int nBlocks = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
