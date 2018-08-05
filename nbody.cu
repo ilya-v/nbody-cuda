@@ -100,7 +100,7 @@ void show_params(const bool to_stdout) {
 
 typedef struct  {
     unsigned step;
-    double t, dt, ep, ek, etot;
+    double t, dt, ep, ek, etot, I;
 } status_t;
 status_t status = { 0, };
 
@@ -116,6 +116,7 @@ static const status_rec_t status_recs[] = {
     { "ep   %16.8le",    &status.ep      },
     { "ek   %16.8le",    &status.ek      },
     { "etot %16.8le",    &status.etot    },
+    { "I    %16.8le",    &status.I       },
     { NULL  }
 };
 
@@ -160,6 +161,29 @@ void status_print() {
 
 
 typedef struct { double x, y, z, vx, vy, vz; } Particle;
+
+
+void status_update( const unsigned N,
+                    const Particle particles[],
+                    const double u[])
+{
+    double px = 0, py = 0, pz = 0;
+    status.ek = 0;
+    status.I = 0;
+    for (const Particle *p = particles; p < particles + N; p++) {
+        px += p->vx;
+        py += p->vy;
+        pz += p->vz;
+        status.ek += (p->vx*p->vx + p->vy*p->vy + p->vz*p->vz)/2;
+        status.I += p->x*p->x + p->y*p->y + p->z*p->z;
+    }
+
+    status.ep = 0;
+    for (unsigned i = 0; i < N; i++)
+        status.ep += u[i];
+
+    status.etot = status.ek - status.ep;
+}
 
 __global__ void calcForces(Particle *p, double dt, unsigned N, double r2_eps) {
     unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -220,7 +244,6 @@ int main(const int argc, const char** argv) {
         *particles = NULL,
         *old_particles = NULL;
 
-    double *u = NULL;
     unsigned N = 0;
 
     {
@@ -257,7 +280,6 @@ int main(const int argc, const char** argv) {
             printf("Cannot read input.txt: %u lines from %u\n", i, N);
             return -1;
         }
-        u = (double *) malloc(N * sizeof(double));
     }
 
     {
@@ -325,28 +347,14 @@ int main(const int argc, const char** argv) {
             status.dt = params.dt_max;
 
         if (status.step % params.n_steps_for_report == 0) {
-            double px = 0, py = 0, pz = 0;
-            status.ek = 0;
-            for (int i = 0 ; i < N; i++) {
-                Particle *p = particles + i;
-                px += p->vx;
-                py += p->vy;
-                pz += p->vz;
-                status.ek += (p->vx*p->vx + p->vy*p->vy + p->vz*p->vz)/2;
-            }
 
-
-            for (unsigned i = 0; i < N; i++)
-                u[i] = 0;
-
+            static double *u = (double *) malloc(N * sizeof(double));
+            for (unsigned i = 0; i < N; i++) u[i] = 0;
             cudaMemcpy(d_u, u, N*sizeof(double), cudaMemcpyHostToDevice);
             calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, d_u, N, params.r2_eps);
             cudaMemcpy(u, d_u, N*sizeof(double), cudaMemcpyDeviceToHost);
-            status.ep = 0;
-            for (unsigned i = 0; i < N; i++)
-                status.ep += u[i];
 
-            status.etot = status.ek - status.ep;
+            status_update(N, particles, u);
             status_print();
         }
 
