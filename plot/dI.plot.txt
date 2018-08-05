@@ -1,0 +1,15 @@
+set term png
+set datafile commentschars "#"
+
+set output "_dI.png"
+set xlabel "Time"
+set ylabel "dI/dT"
+set format y "%e"
+
+! cat 'output.txt' | grep -v '#' | \
+    awk 'BEGIN {tp=0;Ip=-1;} { t=$2; I=$7; dt=t-tp; dI=I-Ip;\
+        if (Ip>0) {print t" "dI/dt;} tp=t; Ip=I; }' > '_dI-div-dt.txt'
+
+
+plot \
+    '_dI-div-dt.txt' using 1:2 with points pointtype 7 pointsize 0.2 title 'dI/dt'
