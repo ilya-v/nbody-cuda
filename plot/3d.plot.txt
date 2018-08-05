@@ -10,5 +10,8 @@ do for [file in list] {
     set title sprintf("%s", file)
 
     set view equal xyz
+    set xrange [-500:500]
+    set yrange [-500:500]
+    set zrange [-500:500]
     splot file using 1:2:3 with points palette pointsize 0.3 pointtype 7
 }
