@@ -1,0 +1,14 @@
+list = system('ls out-*.txt')
+! mkdir -p _plot_particles3d
+
+
+set term png
+set datafile commentschars "#"
+
+do for [file in list] {
+    set output sprintf('_plot_particles3d/%s.png', file)
+    set title sprintf("%s", file)
+
+    set view equal xyz
+    splot file using 1:2:3 with points palette pointsize 0.3 pointtype 7
+}
