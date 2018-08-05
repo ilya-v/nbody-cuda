@@ -19,3 +19,11 @@ set format y "%e"
 plot \
     'output.txt' using 2:6 with points pointtype 7 pointsize 0.2 title 'E'
 
+
+set output "_ep-div-ek.png"
+set xlabel "Time"
+set ylabel "Ep/Ek"
+set format y "%e"
+
+plot \
+    'output.txt' using 2:($4/$5) with points pointtype 7 pointsize 0.2 title 'Ep/Ek'
