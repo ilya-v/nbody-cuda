@@ -1,0 +1,10 @@
+set term png
+set datafile commentschars "#"
+
+set output "_I.png"
+set xlabel "Time"
+set ylabel "Momentum of Inertia"
+set format y "%e"
+
+plot \
+    'output.txt' using 2:7 with points pointtype 7 pointsize 0.2 title 'I'
