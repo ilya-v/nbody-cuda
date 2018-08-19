@@ -8,7 +8,7 @@
 #define EPS 1.2e-7
 #define RNMX (1.0-EPS)
 
-double rand(long *rng_state) {
+double rand(long *idum) {
     int j;
     long k;
     static long iy=0;
