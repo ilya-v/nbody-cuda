@@ -111,7 +111,7 @@ static const record_t param_recs[] = {
         {   NULL,   }
 };
 
-void read_params() {
+void read_params(const record_t param_recs[]) {
     FILE *fparam = fopen("params.txt", "r");
     if (!fparam)
         return;
@@ -179,8 +179,13 @@ void generate_initial_config(params_t *params) {
     double rand(long *rng_state);
 
     FILE *fout = fopen("input.txt", "w");
+    if (!fout)
+    {
+        printf("# Error creating input.txt\n");
+        return;
+    }
 
-    if (fout && 0 == strcmp("sphere", params->initial_config)) {
+    if (0 == strcmp("sphere", params->initial_config)) {
         const unsigned Ns = (unsigned)(params->config_r / params->config_a) + 1;
         for (int i = -Ns; i <= Ns; i++)
         for (int j = -Ns; j <= Ns; j++)
@@ -204,8 +209,11 @@ void generate_initial_config(params_t *params) {
                     x,y,z, vx + vrx, vy + vry, vz + vrz);
         }
     }
-    if (fout)
-        fclose(fout);
+    else {
+        printf("# Unknown initial_config: <%s>\n", params->initial_config);
+    }
+
+    fclose(fout);
 }
 
 
@@ -336,7 +344,7 @@ int main(const int argc, const char** argv) {
         return 0;
     }
 
-    read_params();
+    read_params(param_recs);
     print_recs(param_recs, stdout, "#", "\n");
 
     status.rng = -(long)params.random_seed;
@@ -361,7 +369,7 @@ int main(const int argc, const char** argv) {
     status.t = params.t_start;
     status.dt = params.dt_start;
     startTimer();
-    for (status.step = 0; status.step < params.n_steps; status.step++) {
+    for (status.step = 0; status.step <= params.n_steps; status.step++) {
 
         cudaMemcpy(d_p, particles, N*sizeof(Particle), cudaMemcpyHostToDevice);
         calcForces<<<nBlocks, BLOCK_SIZE>>>(d_p, status.dt, N, params.r2_eps);
