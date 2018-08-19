@@ -130,7 +130,7 @@ void print_recs(const record_t param_recs[], FILE *fout,
         char fmt[256] = {0, };
         strcpy(fmt, rec->fmt);
         *strstr(fmt, "  %") = '=';
-        fprintf(fout, "%s%s%s", pre, print_param(rec->fmt, rec->ptr), post);
+        fprintf(fout, "%s%s%s", pre, print_param(fmt, rec->ptr), post);
     }
 }
 
