@@ -64,7 +64,7 @@ typedef struct {
             t_start,
             r2_eps;
 
-    char initial_config[256];
+    char *initial_config;
     double
             config_a,
             config_r,
@@ -74,6 +74,7 @@ typedef struct {
     unsigned random_seed;
 } params_t;
 
+static char initial_config[256];
 
 static params_t params = {
         .n_steps = 1000*1000,
@@ -84,7 +85,7 @@ static params_t params = {
         .dt_start = 0.001,
         .t_start = 0,
         .r2_eps = 0.01,
-        .initial_config = "",
+        .initial_config = initial_config,
         .config_a = 1.0,
         .config_r = 10.0,
         .config_ang_vel = 0.1,
