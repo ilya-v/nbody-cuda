@@ -186,7 +186,7 @@ void generate_initial_config(params_t *params) {
     }
 
     if (0 == strcmp("sphere", params->initial_config)) {
-        const unsigned Ns = (unsigned)(params->config_r / params->config_a) + 1;
+        const int Ns = (unsigned)(params->config_r / params->config_a) + 1;
         for (int i = -Ns; i <= Ns; i++)
         for (int j = -Ns; j <= Ns; j++)
         for (int k = -Ns; k <= Ns; k++) {
