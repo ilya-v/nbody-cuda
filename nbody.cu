@@ -172,7 +172,7 @@ void generate_initial_config(params_t *params) {
 
     double rand(long *rng_state);
 
-    FILE *fout = fopen("input.txt");
+    FILE *fout = fopen("input.txt", "w");
 
     if (fout && 0 == strcmp("sphere", params->initial_config)) {
         const unsigned Ns = (unsigned)(params->config_r / params->config_a) + 1;
@@ -350,7 +350,7 @@ int main(const int argc, const char** argv) {
     double *d_u;
     cudaMalloc(&d_u, N*sizeof(double));
 
-    status_print_header();
+    status_print_header(status_recs);
 
     status.t = params.t_start;
     status.dt = params.dt_start;
