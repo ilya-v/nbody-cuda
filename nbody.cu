@@ -126,8 +126,12 @@ void read_params() {
 
 void print_recs(const record_t param_recs[], FILE *fout,
                 const char *pre, const char *post) {
-    for (const record_t *rec = param_recs; rec->fmt; rec++)
+    for (const record_t *rec = param_recs; rec->fmt; rec++) {
+        char fmt[256] = {0, };
+        strcpy(fmt, rec->fmt);
+        *strstr(fmt, "  %") = '=';
         fprintf(fout, "%s%s%s", pre, print_param(rec->fmt, rec->ptr), post);
+    }
 }
 
 typedef struct  {
