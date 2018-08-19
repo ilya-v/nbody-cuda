@@ -107,6 +107,7 @@ static const record_t param_recs[] = {
         {   "config_a                %lf",  &params.config_a            },
         {   "config_r                %lf",  &params.config_r            },
         {   "config_ang_vel          %lf",  &params.config_ang_vel      },
+        {   "config_rand_vel         %lf",  &params.config_rand_vel     },
         {   NULL,   }
 };
 
