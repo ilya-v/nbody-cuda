@@ -64,7 +64,7 @@ typedef struct {
             t_start,
             r2_eps;
 
-    const char *initial_config;
+    char initial_config[256];
     double
             config_a,
             config_r,
