@@ -47,7 +47,7 @@ const char* print_param(const char *fmt, void *ptr) {
             (strstr(type, "d")  && sprintf(out, fmt, *(int*)ptr) > 0)      ||
             (strstr(type, "ld") && sprintf(out, fmt, *(long*)ptr) > 0)     ||
             (strstr(type, "s")  && sprintf(out, fmt, (char*)ptr) > 0))  ?
-                out : fmt;
+                (const char *)out : fmt;
 }
 
 typedef struct {
