@@ -37,7 +37,7 @@ bool read_param(const char *line, const char *fmt, void *dest) {
 
 const char* print_param(const char *fmt, void *ptr) {
     static char out[256];
-    char *type = NULL;
+    const char *type = NULL;
     return
         (type = strchr(fmt, '%')) && (
             (strstr(type, "lf") && sprintf(out, fmt, *(double*)ptr) > 0)   ||
@@ -47,7 +47,7 @@ const char* print_param(const char *fmt, void *ptr) {
             (strstr(type, "d")  && sprintf(out, fmt, *(int*)ptr) > 0)      ||
             (strstr(type, "ld") && sprintf(out, fmt, *(long*)ptr) > 0)     ||
             (strstr(type, "s")  && sprintf(out, fmt, (char*)ptr) > 0))  ?
-                (const char *)out : fmt;
+                out : fmt;
 }
 
 typedef struct {
