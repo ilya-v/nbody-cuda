@@ -8,9 +8,9 @@ set format y "%e"
 set yrange [0:2e6]
 set xrange [0:300]
 
-! gcc calc-I-R-t.c -o ./calc-I-R-t -lm
+! find . -name calc-I-R-t.c | head -1 | xargs -i gcc "{}" -o ./calc-I-R-t -lm
 
-! ls out-*.txt | sort | xargs -n 1 -i sh -c "./calc-I-R-t {} >> _I-R-t-data.{}"
+! ls out-*.txt | sort | xargs -n 1 -i sh -c "./calc-I-R-t {} > _I-R-t-data.{}"
 
 files=system("ls _I-R-t-data.out-*.txt")
 

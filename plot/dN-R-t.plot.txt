@@ -1,16 +1,17 @@
 set term png
 set datafile commentschars "#"
+set datafile separator " "
 
 set timestamp
 set xlabel "R"
 set ylabel "dN"
-set format y "%d"
+set format y "%g"
 set yrange [0:100]
 set xrange [0:300]
 
-! gcc calc-dN-R-t.c -o ./calc-dN-R-t -lm
+! find . -name calc-dN-R-t.c | head -1 | xargs -i gcc "{}" -o ./calc-dN-R-t -lm
 
-! ls out-*.txt | sort | xargs -n 1 -i sh -c "./calc-dN-R-t {} >> _dN-R-t-data.{}"
+! ls out-*.txt | sort | xargs -n 1 -i sh -c "./calc-dN-R-t {} > _dN-R-t-data.{}"
 
 files=system("ls _dN-R-t-data.out-*.txt")
 
