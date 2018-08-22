@@ -6,7 +6,7 @@ set timestamp
 set xlabel "R"
 set ylabel "dN"
 set format y "%g"
-set yrange [0:100]
+set yrange [0:500]
 set xrange [0:300]
 
 ! find . -name calc-dN-R-t.c | head -1 | xargs -i gcc "{}" -o ./calc-dN-R-t -lm
