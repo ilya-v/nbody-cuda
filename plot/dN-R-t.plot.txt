@@ -1,0 +1,27 @@
+set term png
+set datafile commentschars "#"
+
+set timestamp
+set xlabel "R"
+set ylabel "dN"
+set format y "%e"
+set yrange [0:100]
+set xrange [0:300]
+
+! gcc calc-dN-R-t.c -o ./calc-dN-R-t -lm
+
+! ls out-*.txt | sort | xargs -n 1 -i sh -c "./calc-dN-R-t {} >> _dN-R-t-data.{}"
+
+files=system("ls _dN-R-t-data.out-*.txt")
+
+do for [file in files] {
+    pname=file.".png"
+    set output pname
+    plot file with points pointtype 7 pointsize 0.2
+}
+
+! mkdir -p _dN-R-t-data
+! mkdir -p _dN-R-t-plots
+! mv _dN-R-t-data.*.txt ./_dN-R-t-data
+! mv _dN-R-t-*.png ./_dN-R-t-plots
+

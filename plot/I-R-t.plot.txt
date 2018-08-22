@@ -1,0 +1,27 @@
+set term png
+set datafile commentschars "#"
+
+set timestamp
+set xlabel "R"
+set ylabel "dI"
+set format y "%e"
+set yrange [0:2e6]
+set xrange [0:300]
+
+! gcc calc-I-R-t.c -o ./calc-I-R-t -lm
+
+! ls out-*.txt | sort | xargs -n 1 -i sh -c "./calc-I-R-t {} >> _I-R-t-data.{}"
+
+files=system("ls _I-R-t-data.out-*.txt")
+
+do for [file in files] {
+    pname=file.".png"
+    set output pname
+    plot file with points pointtype 7 pointsize 0.2
+}
+
+! mkdir -p _I-R-t-data
+! mkdir -p _I-R-t-plots
+! mv _I-R-t-data.*.txt ./_I-R-t-data
+! mv _I-R-t-*.png ./_I-R-t-plots
+
