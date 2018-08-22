@@ -17,7 +17,7 @@ files=system("ls _I-R-t-data.out-*.txt")
 do for [file in files] {
     pname=file.".png"
     set output pname
-    plot file with points pointtype 7 pointsize 0.2
+    plot file with points pointtype 7 pointsize 0.2 notitle
 }
 
 ! mkdir -p _I-R-t-data
