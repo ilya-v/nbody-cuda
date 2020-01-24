@@ -449,4 +449,7 @@ int main(const int argc, const char** argv) {
     free(particles);
     cudaFree(d_p);
     cudaFree(d_u);
+
+    cudaDeviceSynchronize();
+    cudaDeviceReset();
 }
