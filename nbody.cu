@@ -1,10 +1,11 @@
+#include <assert.h>
+#include <ctype.h>
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <stdbool.h>
-#include <ctype.h>
 
 static clock_t t0;
 
@@ -115,8 +116,10 @@ static const record_t param_recs[] = {
 
 void read_params(const record_t param_recs[]) {
     FILE *fparam = fopen("params.txt", "r");
-    if (!fparam)
+    if (!fparam) {
+        printf("# params.txt not found, using default parameters\n");
         return;
+    }
 
     const unsigned max_line_len = 256;
     for(char buf[max_line_len] = {0,}; fgets(buf, max_line_len, fparam);)
@@ -175,19 +178,22 @@ void status_print(const record_t records[]) {
 
 
 void generate_initial_config(params_t *params) {
-    if (!(params->initial_config) || !params->initial_config[0])
+    if (!(params->initial_config) || !params->initial_config[0]) {
+        printf("# Skipping generation of input.txt with initial config\n");
         return;
+    }
 
     double rand(long *rng_state);
 
     FILE *fout = fopen("input.txt", "w");
-    if (!fout)
-    {
+    if (!fout) {
         printf("# Error creating input.txt\n");
         return;
     }
 
     if (0 == strcmp("sphere", params->initial_config)) {
+        printf("# Generating initial configuration of type 'sphere'\n");
+        unsigned count = 0;
         const int Ns = (unsigned)(params->config_r / params->config_a) + 1;
         for (int i = -Ns; i <= Ns; i++)
         for (int j = -Ns; j <= Ns; j++)
@@ -209,7 +215,9 @@ void generate_initial_config(params_t *params) {
 
             fprintf(fout, "%lf %lf %lf %lf %lf %lf\n",
                     x,y,z, vx + vrx, vy + vry, vz + vrz);
+            count++;
         }
+        printf("# Generated %u particles\n", count);
     }
     else {
         printf("# Unknown initial_config: <%s>\n", params->initial_config);
@@ -356,6 +364,8 @@ int main(const int argc, const char** argv) {
         *particles = NULL,
         *old_particles = NULL;
     unsigned N = read_initial_config(&particles, &old_particles);
+    assert(particles);
+    assert(N != (unsigned)(-1));
     particles_center(N, particles);
 
     const int nBlocks = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
