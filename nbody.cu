@@ -432,11 +432,12 @@ int main(const int argc, const char** argv) {
 
         if (status.step % s_params.n_steps_for_output == 0) {
             char fname[256];
-            sprintf(fname, "out-%06u.txt", status.step);
+            sprintf(fname, "out-%06u.xyz", status.step);
             FILE *fout = fopen(fname, "w");
+            fprintf(fout, "%u\nt=%.8lf\n", N, status.t);
             for (unsigned i = 0; i < N; i++) {
                 Particle *p = particles + i;
-                fprintf(fout, "%lf %lf %lf %lf %lf %lf\n",
+                fprintf(fout, "C %lf %lf %lf %lf %lf %lf\n",
                         p->x, p->y, p->z, p->vx, p->vy, p->vz);
             }
             fclose(fout);
