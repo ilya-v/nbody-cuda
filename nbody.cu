@@ -8,11 +8,11 @@
 
 static clock_t t0;
 
-void startTimer() {
+void start_timer() {
     t0 = clock();
 }
 
-double getTimer() {
+double get_timer() {
     return (clock() - t0) / (double)CLOCKS_PER_SEC;
 }
 
@@ -74,40 +74,42 @@ typedef struct {
     unsigned random_seed;
 } params_t;
 
-static char initial_config[256];
+static params_t default_params() {
+    static char initial_config[256] = "sphere";
+    params_t p = { 0, };
+    p.n_steps = 1000 * 1000;
+    p.n_steps_for_report = 100;
+    p.n_steps_for_output = 1000;
+    p.dt_max = 0.01;
+    p.dv_max = 0.01;
+    p.dt_start = 0.001;
+    p.t_start = 0;
+    p.r2_eps = 0.01;
+    p.initial_config = initial_config;
+    p.config_a = 1.0;
+    p.config_r = 10.0;
+    p.config_ang_vel = 0.1;
+    p.config_rand_vel = 0.1;
+    p.random_seed = 102030;
+    return p;
+}
 
-static params_t params = {
-        .n_steps = 1000*1000,
-        .n_steps_for_report = 100,
-        .n_steps_for_output = 1000,
-        .dt_max = 0.01,
-        .dv_max = 0.01,
-        .dt_start = 0.001,
-        .t_start = 0,
-        .r2_eps = 0.01,
-        .initial_config = initial_config,
-        .config_a = 1.0,
-        .config_r = 10.0,
-        .config_ang_vel = 0.1,
-        .config_rand_vel = 0.1,
-        .random_seed = 102030,
-
-};
+static params_t s_params = default_params();
 
 static const record_t param_recs[] = {
-        {   "n_steps                 %u",   &params.n_steps             },
-        {   "n_steps_for_report      %u",   &params.n_steps_for_report  },
-        {   "n_steps_for_output      %u",   &params.n_steps_for_output  },
-        {   "dt_max                  %lf",  &params.dt_max              },
-        {   "dv_max                  %lf",  &params.dv_max              },
-        {   "dt_start                %lf",  &params.dt_start            },
-        {   "t_start                 %lf",  &params.t_start             },
-        {   "r2_eps                  %lf",  &params.r2_eps              },
-        {   "initial_config          %s",    params.initial_config      },
-        {   "config_a                %lf",  &params.config_a            },
-        {   "config_r                %lf",  &params.config_r            },
-        {   "config_ang_vel          %lf",  &params.config_ang_vel      },
-        {   "config_rand_vel         %lf",  &params.config_rand_vel     },
+        {   "n_steps                 %u",   &s_params.n_steps             },
+        {   "n_steps_for_report      %u",   &s_params.n_steps_for_report  },
+        {   "n_steps_for_output      %u",   &s_params.n_steps_for_output  },
+        {   "dt_max                  %lf",  &s_params.dt_max              },
+        {   "dv_max                  %lf",  &s_params.dv_max              },
+        {   "dt_start                %lf",  &s_params.dt_start            },
+        {   "t_start                 %lf",  &s_params.t_start             },
+        {   "r2_eps                  %lf",  &s_params.r2_eps              },
+        {   "initial_config          %s",    s_params.initial_config      },
+        {   "config_a                %lf",  &s_params.config_a            },
+        {   "config_r                %lf",  &s_params.config_r            },
+        {   "config_ang_vel          %lf",  &s_params.config_ang_vel      },
+        {   "config_rand_vel         %lf",  &s_params.config_rand_vel     },
         {   NULL,   }
 };
 
@@ -347,8 +349,8 @@ int main(const int argc, const char** argv) {
     read_params(param_recs);
     print_recs(param_recs, stdout, "#", "\n");
 
-    status.rng = -(long)params.random_seed;
-    generate_initial_config(&params);
+    status.rng = -(long)s_params.random_seed;
+    generate_initial_config(&s_params);
 
     Particle
         *particles = NULL,
@@ -366,13 +368,13 @@ int main(const int argc, const char** argv) {
 
     status_print_header(status_recs);
 
-    status.t = params.t_start;
-    status.dt = params.dt_start;
-    startTimer();
-    for (status.step = 0; status.step <= params.n_steps; status.step++) {
+    status.t = s_params.t_start;
+    status.dt = s_params.dt_start;
+    start_timer();
+    for (status.step = 0; status.step <= s_params.n_steps; status.step++) {
 
         cudaMemcpy(d_p, particles, N*sizeof(Particle), cudaMemcpyHostToDevice);
-        calcForces<<<nBlocks, BLOCK_SIZE>>>(d_p, status.dt, N, params.r2_eps);
+        calcForces<<<nBlocks, BLOCK_SIZE>>>(d_p, status.dt, N, s_params.r2_eps);
         Particle *tmp_particles = old_particles;
         old_particles = particles;
         particles = tmp_particles;
@@ -396,23 +398,25 @@ int main(const int argc, const char** argv) {
         }
         status.t += status.dt;
 
-        status.dt = params.dv_max/dv * status.dt;
-        if (status.dt > params.dt_max)
-            status.dt = params.dt_max;
 
-        if (status.step % params.n_steps_for_report == 0) {
+
+        status.dt = s_params.dv_max/dv * status.dt;
+        if (status.dt > s_params.dt_max)
+            status.dt = s_params.dt_max;
+
+        if (status.step % s_params.n_steps_for_report == 0) {
 
             static double *u = (double *) malloc(N * sizeof(double));
             for (unsigned i = 0; i < N; i++) u[i] = 0;
             cudaMemcpy(d_u, u, N*sizeof(double), cudaMemcpyHostToDevice);
-            calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, d_u, N, params.r2_eps);
+            calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, d_u, N, s_params.r2_eps);
             cudaMemcpy(u, d_u, N*sizeof(double), cudaMemcpyDeviceToHost);
 
             status_update(N, particles, u);
             status_print(status_recs);
         }
 
-        if (status.step % params.n_steps_for_output == 0) {
+        if (status.step % s_params.n_steps_for_output == 0) {
             char fname[256];
             sprintf(fname, "out-%06u.txt", status.step);
             FILE *fout = fopen(fname, "w");
@@ -421,13 +425,12 @@ int main(const int argc, const char** argv) {
                 fprintf(fout, "%lf %lf %lf %lf %lf %lf\n",
                         p->x, p->y, p->z, p->vx, p->vy, p->vz);
             }
-
             fclose(fout);
         }
     }
 
     printf("#N=%d, Steps=%u Titer=%0.3lf s\n",
-        N, params.n_steps, getTimer() / params.n_steps);
+        N, s_params.n_steps, get_timer() / s_params.n_steps);
     free(particles);
     cudaFree(d_p);
     cudaFree(d_u);
