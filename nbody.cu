@@ -143,20 +143,22 @@ void print_recs(const record_t param_recs[], FILE *fout,
 typedef struct  {
     unsigned step;
     double t, dt, ep, ek, etot, I;
+    double machine_time;
     long rng;
 
 } status_t;
 status_t status = { 0, };
 
 static const record_t status_recs[] = {
-    { "step %8u",       &status.step    },
-    { "time %16.8lf",   &status.t       },
-    { "dt   %16.8le",   &status.dt      },
-    { "ep   %16.8le",   &status.ep      },
-    { "ek   %16.8le",   &status.ek      },
-    { "etot %16.8le",   &status.etot    },
-    { "I    %16.8le",   &status.I       },
-    { "rng  %8u",       &status.rng     },
+    { "step  %8u",       &status.step           },
+    { "time  %16.8lf",   &status.t              },
+    { "dt    %16.8le",   &status.dt             },
+    { "ep    %16.8le",   &status.ep             },
+    { "ek    %16.8le",   &status.ek             },
+    { "etot  %16.8le",   &status.etot           },
+    { "I     %16.8le",   &status.I              },
+    { "mtime %16.8lf",   &status.machine_time   },
+    { "rng  %8u",       &status.rng             },
     { NULL  }
 };
 
@@ -267,7 +269,8 @@ unsigned read_initial_config(Particle **particles, Particle **old_particles) {
 
 void status_update( const unsigned N,
                     const Particle particles[],
-                    const double u[])
+                    const double u[],
+                    const double machine_time)
 {
     double px = 0, py = 0, pz = 0;
     status.ek = 0;
@@ -285,6 +288,7 @@ void status_update( const unsigned N,
         status.ep += u[i];
 
     status.etot = status.ek - status.ep;
+    status.machine_time = machine_time;
 }
 
 void particles_center(const unsigned N, Particle particles[]) {
@@ -422,7 +426,7 @@ int main(const int argc, const char** argv) {
             calcPotential<<<nBlocks, BLOCK_SIZE>>>(d_p, d_u, N, s_params.r2_eps);
             cudaMemcpy(u, d_u, N*sizeof(double), cudaMemcpyDeviceToHost);
 
-            status_update(N, particles, u);
+            status_update(N, particles, u, get_timer());
             status_print(status_recs);
         }
 
