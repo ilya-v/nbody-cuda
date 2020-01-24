@@ -233,7 +233,7 @@ typedef struct { double x, y, z, vx, vy, vz; } Particle;
 
 
 unsigned read_initial_config(Particle **particles, Particle **old_particles) {
-    int N = 0;
+    unsigned N = 0;
     FILE *fin = fopen("input.txt", "r");
     if (!fin) {
         printf("Cannot open input.txt\n");
@@ -395,7 +395,7 @@ int main(const int argc, const char** argv) {
         cudaMemcpy(particles, d_p, N*sizeof(Particle), cudaMemcpyDeviceToHost);
 
         double dv = 0;
-        for (int i = 0 ; i < N; i++) {
+        for (unsigned i = 0 ; i < N; i++) {
             Particle *p = particles + i;
             p->x += p->vx*status.dt;
             p->y += p->vy*status.dt;
