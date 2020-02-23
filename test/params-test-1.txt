@@ -1,0 +1,14 @@
+n_steps               = 2000000
+n_steps_for_report    = 200
+n_steps_for_output    = 2000
+dt_max                = 0.020000
+dv_max                = 0.020000
+dt_start              = 0.002000
+t_start               = 0.000000
+r2_eps                = 0.020000
+initial_config        = sphere
+config_a              = 2.000000
+config_r              = 23.500000
+config_ang_vel        = 0.200000
+config_rand_vel       = 0.200000
+random_seed           = 2
